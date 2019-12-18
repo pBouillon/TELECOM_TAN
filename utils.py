@@ -6,32 +6,53 @@
     :license: [MIT](https://github.com/pBouillon/TELECOM_TAN/blob/master/LICENSE)
 """
 
-from collections import NamedTuple
+from typing import NamedTuple
 from enum import Enum
-from path import os
+from os import path
 
 import numpy as np
-import scipy.io as sio
+import scipy.io.wavfile as wavfile
+import matplotlib.pyplot as plt
 
 
 """Expected wav file rate
 """
 CD_QUALITY_RATE = 44_100
 
+"""Power of 2 for N
+"""
+NU = 13
+
+"""Number of data points in each samples
+"""
+N = 2 ** NU
+
+"""Sampling period
+"""
+T_E = 1 / CD_QUALITY_RATE
+
+"""Sample's duration
+"""
+T = N * T_E
+
+"""Time vector
+"""
+TV = np.linspace(0, T, N, endpoint=False)
+
 
 class Phonem(Enum):
     """Phonem enum to classify phonems
     """
     A = 'a'
+    AN = 'an'
     E = 'e'
     E_ACUTE = 'é'
     E_AGRAVE = 'è'
     I = 'i'
-    O = 'o'
-    OU = 'ou'
-    AN = 'an'
     IN = 'in'
+    O = 'o'
     ON = 'on'
+    OU = 'ou'
     U = 'u'
 
 
@@ -57,11 +78,14 @@ def load_wav_file(file_path: str) -> RawSample:
 
     :param file_path: path to the wav file
 
-    :raise ValueError: On bad file rate (!= CD_QUALITY_RATE)
+    :raise ValueError: on bad file rate (!= CD_QUALITY_RATE)
     :returns: the associated RawSample data object
     """
     # Read the .wav file
-    rate, data = sio.wavfile.read(file_path)
+    rate, data = wavfile.read(file_path)
+
+    # cut the number of data points to the chosen power of 2
+    data = np.array(data[:N])
 
     if rate != CD_QUALITY_RATE:
         raise ValueError(
@@ -69,8 +93,9 @@ def load_wav_file(file_path: str) -> RawSample:
             f'expected {CD_QUALITY_RATE} Hz')
 
     # Extract file meta data
-    *_, phonem_str_caps, file_name = path.split(file_path)
+    phonem_str_caps, file_name = file_path.replace('\\', '/').split('/')[-2:]
     phonem = Phonem(phonem_str_caps.lower())
 
     # Instanciate the associated data object
     return RawSample(phonem, file_path, data)
+
