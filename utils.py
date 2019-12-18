@@ -38,8 +38,17 @@ class Phonem(Enum):
 class RawSample(NamedTuple):
     """.wav data object
     """
+
+    """Handled phonem
+    """
     phonem: Phonem
+
+    """Source of the recording
+    """
     file_name: str
+
+    """Data read from wav file
+    """
     data: np.array
 
 
