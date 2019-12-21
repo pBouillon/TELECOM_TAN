@@ -6,136 +6,16 @@
     :license: [MIT](https://github.com/pBouillon/TELECOM_TAN/blob/master/LICENSE)
 """
 
-from enum import Enum
-from typing import NamedTuple
-from os import path
-from math import pi, floor
+from math import pi
 
-import matplotlib.pyplot as plt
-import numpy as np
 import scipy.io.wavfile as wavfile
+import numpy as np
+from pathlib2 import Path
 
+from utils.constants import N, CD_QUALITY_RATE, NSV, K_MIN, K_MAX, \
+    T_E, KV, K_C, RO, QSV, Q
+from utils.data_objects import Sample, Phoneme, Spectrum
 
-"""Expected wav file rate
-"""
-CD_QUALITY_RATE = 44_100
-
-"""Power of 2 for N
-"""
-NU = 13
-
-"""Number of data points in each samples
-"""
-N = 2 ** NU
-
-"""Sample spacing
-"""
-T_E = 1 / CD_QUALITY_RATE
-
-"""Sample's duration
-"""
-T = N * T_E
-
-"""Time vector
-"""
-TV = np.linspace(-T / 2, T / 2, N, endpoint=False)
-
-"""Shifted N vector
-"""
-NSV = np.arange(0, N, 1)
-
-"""TODO
-"""
-K_MAX = 512
-
-"""TODO
-"""
-TARGET_F_MIN = 300
-
-"""TODO
-"""
-K_MIN = floor(TARGET_F_MIN * T)
-
-"""TODO
-"""
-F_MAX = K_MAX / T
-
-"""TODO
-"""
-KV = np.arange(0, K_MAX, 1)
-
-"""TODO
-"""
-K_C = 80  # TODO: adjust
-
-"""TODO
-"""
-RO = .01
-
-"""TODO
-"""
-F_P_REF = 400
-
-"""TODO
-"""
-Q = floor(F_P_REF * T)
-
-"""TODO
-"""
-QSV = np.arange(0, Q, 1)
-
-class Phonem(Enum):
-    """Phonem enum to classify phonems
-    """
-    A = 'a'
-    AN = 'an'
-    E = 'e'
-    E_ACUTE = 'é'
-    E_AGRAVE = 'è'
-    I = 'i'
-    IN = 'in'
-    O = 'o'
-    ON = 'on'
-    OU = 'ou'
-    U = 'u'
-
-
-class Sample(NamedTuple):
-    """.wav data object
-    """
-
-    """Handled phonem
-    """
-    phonem: Phonem
-
-    """Source of the recording
-    """
-    file_name: str
-
-    """Data read from wav file
-    """
-    data: np.array
-
-
-class Spectrum(NamedTuple):
-    """TODO
-    """
-    
-    """Sample value
-    """
-    data: np.array
-    
-    """Sample frequency
-    """
-    freq: np.array
-    
-    """Source of the original recording
-    """
-    file_name: str
-    
-    """Handled Phonem
-    """
-    phonem: Phonem
 
 def load_wav_file(file_path: str) -> Sample:
     """Loads a wav file and returns the corresponding RawSample data object.
@@ -157,11 +37,15 @@ def load_wav_file(file_path: str) -> Sample:
             f'expected {CD_QUALITY_RATE} Hz')
 
     # Extract file meta data
-    phonem_str_caps, file_name = file_path.replace('\\', '/').split('/')[-2:]
-    phonem = Phonem(phonem_str_caps.lower())
+    file_name = Path(file_path).name
+    raw_phoneme = file_name.split('_')[0]
+    try:
+        phoneme = Phoneme(raw_phoneme.lower())
+    except ValueError:
+        raise ValueError(f'Invalid phoneme "{raw_phoneme.lower()}"')
 
-    # Instanciate the associated data object
-    return Sample(phonem, file_path, data)
+    # Instantiate the associated data object
+    return Sample(phoneme, file_name, data)
 
 
 def window(sample: Sample) -> Sample:
@@ -173,13 +57,13 @@ def window(sample: Sample) -> Sample:
     """
     hamming_window = (1 / 2) * (1 + np.cos(2 * pi * (NSV - N / 2) / N))
     return Sample(
-        phonem=sample.phonem,
+        phoneme=sample.phoneme,
         file_name=sample.file_name,
         data=hamming_window * sample.data
     )
 
 
-def spectrum(sample: Sample) -> Spectrum:
+def spectrum_of(sample: Sample) -> Spectrum:
     """Apply the discrete Fourier Transform on the current sample
 
     :remark: Spectrum.data only contains the modulus of the fft spectrum
@@ -188,14 +72,18 @@ def spectrum(sample: Sample) -> Spectrum:
 
     :returns: the generated Spectrum object
     """
-    data = np.concatenate([np.zeros(K_MIN), np.abs(np.fft.fft(sample.data))[K_MIN:K_MAX]])
+    data = np.concatenate(
+        [np.zeros(K_MIN),
+         np.abs(np.fft.fft(sample.data))[K_MIN:K_MAX]]
+    )
+
     freq = np.fft.fftfreq(N, T_E)[:K_MAX]
 
     return Spectrum(
         data=data,
         file_name=sample.file_name,
         freq=freq,
-        phonem=sample.phonem
+        phoneme=sample.phoneme
     )
 
 
@@ -209,7 +97,7 @@ def enhance_high_freqs(spectrum: Spectrum) -> Spectrum:
         data=data,
         file_name=spectrum.file_name,
         freq=spectrum.freq,
-        phonem=spectrum.phonem
+        phoneme=spectrum.phoneme
     )
 
 
@@ -224,11 +112,11 @@ def biased_log(spectrum: Spectrum) -> (Spectrum, float):
         data=data,
         file_name=spectrum.file_name,
         freq=spectrum.freq,
-        phonem=spectrum.phonem
+        phoneme=spectrum.phoneme
     ), beta
 
 
-def smoothen(spectrum: Spectrum) -> Spectrum:
+def smooth(spectrum: Spectrum) -> Spectrum:
     """TODO
     """
     weight_func = (1 / 2) * (1 + np.cos(2 * pi * (QSV - Q / 2) / Q))
@@ -240,7 +128,7 @@ def smoothen(spectrum: Spectrum) -> Spectrum:
         data=data,
         file_name=spectrum.file_name,
         freq=spectrum.freq,
-        phonem=spectrum.phonem
+        phoneme=spectrum.phoneme
     )
 
 
@@ -248,26 +136,10 @@ def biased_exp(spectrum: Spectrum, beta: float) -> Spectrum:
     """TODO
     """
     data = np.exp(spectrum.data) - beta
-    
+
     return Spectrum(
         data=data,
         file_name=spectrum.file_name,
         freq=spectrum.freq,
-        phonem=spectrum.phonem
+        phoneme=spectrum.phoneme
     )
-
-
-def main():
-    raw_sample = load_wav_file("/home/thomas/Bureau/samples/A/a_fvogt_1.wav")
-    w = window(raw_sample)
-    s = spectrum(w)
-    h = enhance_high_freqs(s)
-    l, beta = biased_log(h)
-    ss = smoothen(l)
-    e = biased_exp(ss, beta)
-    plt.plot(ss.freq, ss.data, ss.freq, l.data)
-    plt.show()
-
-
-if __name__ == "__main__":
-    main()

@@ -1,2 +1,4 @@
+pathlib2
+matplotlib
 numpy
 scipy
