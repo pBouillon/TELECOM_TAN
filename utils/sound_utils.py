@@ -256,8 +256,8 @@ def wav_to_normalized_h_2(played_file: str) -> Spectrum:
 
     c, ndelay = complex_cepstrum(s)
     rc = real_cepstrum(s)
-    K_C_MIN_SEARCH = int(np.round(1 / (265 * T_E)))
-    K_C_MAX_SEARCH = int(np.round(1 / (70 * T_E)))
+    K_C_MIN_SEARCH = int(np.round(1 / (255 * T_E)))
+    K_C_MAX_SEARCH = int(np.round(1 / (85 * T_E)))
     k_f_p = np.argmax(rc[K_C_MIN_SEARCH:K_C_MAX_SEARCH]) + K_C_MIN_SEARCH - 2
 
     print(k_f_p)
