@@ -251,18 +251,24 @@ def wav_to_normalized_h_2(played_file: str) -> Spectrum:
     raw_sample = load_wav_file(played_file)
     w = windowed(raw_sample)
     s = np.fft.fft(w.data)
+    p = np.sqrt(1 + (KV / K_C) ** 2)
+    pp = np.concatenate([p, np.ones(len(s) - 2 * K_MAX), p[::-1]])
+    s = s * pp
+
     f = np.fft.fftfreq(len(w.data), T_E)[:K_MAX]
     n = len(s)
 
     c, ndelay = complex_cepstrum(s)
     rc = real_cepstrum(s)
     K_C_MIN_SEARCH = int(np.round(1 / (255 * T_E)))
-    K_C_MAX_SEARCH = int(np.round(1 / (85 * T_E)))
-    k_f_p = np.argmax(rc[K_C_MIN_SEARCH:K_C_MAX_SEARCH]) + K_C_MIN_SEARCH - 2
+    K_C_MAX_SEARCH = int(np.round(1 / (75 * T_E)))
+    k_f_p = np.argmax(rc[K_C_MIN_SEARCH:K_C_MAX_SEARCH]) + K_C_MIN_SEARCH
 
-    print(k_f_p)
     f_p = 1 / (k_f_p * T_E)
     print(f_p)
+
+    k_f_p -= 40
+    print(k_f_p)
 
     c_altered = np.concatenate([c[:k_f_p], np.zeros(len(c) - 2 * k_f_p), c[-k_f_p:]])
 
@@ -271,13 +277,12 @@ def wav_to_normalized_h_2(played_file: str) -> Spectrum:
 
     new_s = inverse_complex_cepstrum(c_altered, ndelay)
 
-    plt.figure()
-    plt.plot(f, np.abs(s[:K_MAX]), "-r", f, np.abs(new_s[:K_MAX]), "--b")
-
-    plt.figure()
-    plt.plot(rc)
-
-    plt.show()
+    return normalize(Spectrum(
+        data=np.abs(new_s[:K_MAX]),
+        freq=f,
+        file_name=raw_sample.file_name,
+        phoneme=raw_sample.phoneme
+    ))
 
 
 def complex_cepstrum(spectrum):

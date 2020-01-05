@@ -26,8 +26,8 @@ AUTHORS = [
 
 PITCHES = [
     {"num": 1, "color": "orangered"},
-    {"num": 2, "color": "red"},
-    {"num": 3, "color": "brown"}
+#    {"num": 2, "color": "red"},
+#    {"num": 3, "color": "brown"}
 ]
 
 
@@ -41,15 +41,11 @@ def main():
         for pitch in PITCHES:
             for author in AUTHORS:
                 played_file = f'./assets/{phoneme}_{author["name"]}_{pitch["num"]}.wav'
-                n = wav_to_normalized_h_1(played_file)
+                n = wav_to_normalized_h_2(played_file)
                 ax.plot(n.freq, n.data, linestyle=author["style"], color=pitch["color"])
 
     plt.show()
 
 
-def main_2():
-    wav_to_normalized_h_2(DEFAULT_PLAYED_FILE)
-
-
 if __name__ == "__main__":
-    main_2()
+    main()
