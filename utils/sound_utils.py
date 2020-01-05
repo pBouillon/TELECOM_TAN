@@ -184,48 +184,6 @@ def scalar_product(spectrum_a: Spectrum, spectrum_b: Spectrum) -> float:
     return np.dot(spectrum_a.data, spectrum_b.data)
 
 
-def cepstrum_of(spectrum: Spectrum) -> Cepstrum:
-    """TODO
-    """
-
-    data = np.fft.ifft(np.log(spectrum.data)).real
-
-    return Cepstrum(
-        data=data,
-        file_name=spectrum.file_name,
-        freq=spectrum.freq,
-        phoneme=spectrum.phoneme
-    )
-
-
-def inverse_cepstrum_of(cepstrum: Cepstrum) -> Spectrum:
-    """TODO
-    """
-
-    data = np.exp(np.abs(np.fft.fft(cepstrum.data)))
-
-    return Spectrum(
-        data=data,
-        file_name=cepstrum.file_name,
-        freq=cepstrum.freq,
-        phoneme=cepstrum.phoneme
-    )
-
-
-def cut_excitation_from_cepstrum(cepstrum: Cepstrum) -> Cepstrum:
-    """TODO
-    """
-
-    data = np.copy(cepstrum.data)  # TODO
-
-    return Cepstrum(
-        data=data,
-        file_name=cepstrum.file_name,
-        freq=cepstrum.freq,
-        phoneme=cepstrum.phoneme
-    )
-
-
 def wav_to_normalized_h_1(played_file: str) -> Spectrum:
     """TODO
     """
