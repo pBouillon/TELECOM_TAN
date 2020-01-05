@@ -236,7 +236,7 @@ def wav_to_normalized_h_2(played_file: str) -> Spectrum:
     new_s = inverse_complex_cepstrum(c_altered, ndelay)
 
     return normalize(Spectrum(
-        data=np.abs(new_s[:K_MAX]),
+        data=np.concatenate([np.zeros(K_MIN), np.abs(new_s[K_MIN:K_MAX])]),
         freq=f,
         file_name=raw_sample.file_name,
         phoneme=raw_sample.phoneme
