@@ -6,37 +6,50 @@
     :license: [MIT](https://github.com/pBouillon/TELECOM_TAN/blob/master/LICENSE)
 """
 
-from sys import argv
-
 import matplotlib.pyplot as plt
 
-from utils.sound_utils import load_wav_file, window, spectrum_of, \
-    enhance_high_freqs, biased_log, smooth, biased_exp
-
+from utils.sound_utils import wav_to_normalized_h_1, wav_to_normalized_h_2
 
 """Default audio file to load
 """
-DEFAULT_PLAYED_FILE = './assets/a_fvogt_1.wav'
+DEFAULT_PLAYED_FILE = './assets/o_pbouillon_3.wav'
+
+PHONEMES = [
+    "a", "an", "e", "i", "in", "o", "on", "ou", "u", "è", "é"
+]
+
+AUTHORS = [
+    {"name": "pbouillon", "style": "-."},
+    {"name": "fvogt", "style": "-"},
+    # {"name": "tbagrel", "style": "--"}
+]
+
+PITCHES = [
+    {"num": 1, "color": "orangered"},
+    {"num": 2, "color": "red"},
+    {"num": 3, "color": "brown"}
+]
 
 
 def main():
-    # select played file
-    played_file = DEFAULT_PLAYED_FILE if len(argv) == 1 else argv[1]
+    fig, axs = plt.subplots(3, 4)
 
-    # extract .wav data
-    raw_sample = load_wav_file(played_file)
-    w = window(raw_sample)
-    s = spectrum_of(w)
-    h = enhance_high_freqs(s)
-    l, beta = biased_log(h)
-    ss = smooth(l)
-    e = biased_exp(ss, beta)
+    for i, phoneme in enumerate(PHONEMES):
+        ax = axs[i // 4, i % 4]
+        ax.set_title(f'Phonème {phoneme}')
 
-    # result display
-    plt.title(f'Spectrum of "{ss.file_name}"')
-    plt.plot(ss.freq, ss.data, ss.freq, l.data)
+        for pitch in PITCHES:
+            for author in AUTHORS:
+                played_file = f'./assets/{phoneme}_{author["name"]}_{pitch["num"]}.wav'
+                n = wav_to_normalized_h_1(played_file)
+                ax.plot(n.freq, n.data, linestyle=author["style"], color=pitch["color"])
+
     plt.show()
 
 
+def main_2():
+    wav_to_normalized_h_2(DEFAULT_PLAYED_FILE)
+
+
 if __name__ == "__main__":
-    main()
+    main_2()

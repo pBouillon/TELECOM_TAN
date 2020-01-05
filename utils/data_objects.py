@@ -64,3 +64,24 @@ class Spectrum(NamedTuple):
     """Handled Phoneme
     """
     phoneme: Phoneme
+
+
+class Cepstrum(NamedTuple):
+    """TODO
+    """
+
+    """Sample value
+    """
+    data: np.array
+
+    """Sample frequency
+    """
+    freq: np.array
+
+    """Source of the original recording
+    """
+    file_name: str
+
+    """Handled Phoneme
+    """
+    phoneme: Phoneme
