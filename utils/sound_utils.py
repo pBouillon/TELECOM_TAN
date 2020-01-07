@@ -189,16 +189,18 @@ def wav_to_normalized_h_1(played_file: str) -> Spectrum:
     """
 
     raw_sample = load_wav_file(played_file)
+    return h_1(raw_sample)
+
+
+def h_1(raw_sample):
     w = windowed(raw_sample)
     s = spectrum_of(w)
     s = enhance_high_freqs(s)
     s = zero_low_frequencies(s)
-
     l, beta = biased_log(s)
     sl = smooth(l)
     s = biased_exp(sl, beta)
     n = normalize(s)
-
     return n
 
 
@@ -207,34 +209,31 @@ def wav_to_normalized_h_2(played_file: str) -> Spectrum:
     """
 
     raw_sample = load_wav_file(played_file)
+    return h_2(raw_sample)
+
+
+def h_2(raw_sample):
     w = windowed(raw_sample)
     s = np.fft.fft(w.data)
     p = np.sqrt(1 + (KV / K_C) ** 2)
     pp = np.concatenate([p, np.ones(len(s) - 2 * K_MAX), p[::-1]])
     s = s * pp
-
     f = np.fft.fftfreq(len(w.data), T_E)[:K_MAX]
     n = len(s)
-
     c, ndelay = complex_cepstrum(s)
     rc = real_cepstrum(s)
     K_C_MIN_SEARCH = int(np.round(1 / (200 * T_E)))
     K_C_MAX_SEARCH = int(np.round(1 / (75 * T_E)))
     k_f_p = np.argmax(rc[K_C_MIN_SEARCH:K_C_MAX_SEARCH]) + K_C_MIN_SEARCH
-
     f_p = 1 / (k_f_p * T_E)
     print(f_p)
-
     k_f_p -= 50
     print(k_f_p)
-
-    c_altered = np.concatenate([c[:k_f_p], np.zeros(len(c) - 2 * k_f_p), c[-k_f_p:]])
-
+    c_altered = np.concatenate(
+        [c[:k_f_p], np.zeros(len(c) - 2 * k_f_p), c[-k_f_p:]])
     print(len(c))
-    assert(len(c) == len(c_altered))
-
+    assert (len(c) == len(c_altered))
     new_s = inverse_complex_cepstrum(c_altered, ndelay)
-
     return normalize(Spectrum(
         data=np.concatenate([np.zeros(K_MIN), np.abs(new_s[K_MIN:K_MAX])]),
         freq=f,

@@ -26,6 +26,7 @@ class Phoneme(Enum):
     ON = 'on'
     OU = 'ou'
     U = 'u'
+    UNKNOWN = 'unknown'
 
 
 class Sample(NamedTuple):
