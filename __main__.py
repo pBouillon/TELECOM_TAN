@@ -12,7 +12,8 @@ import numpy as np
 
 from utils.constants import N
 from utils.data_objects import Sample, Phoneme
-from utils.sound_utils import wav_to_normalized_h_1, wav_to_normalized_h_2, h_2
+from utils.sound_utils import wav_to_normalized_h_1, wav_to_normalized_h_2, h_2, \
+    scalar_product
 from utils.easy_thread import ThreadPool, DebugLevel
 
 """Default audio file to load
@@ -91,23 +92,36 @@ def process_samples(record_gen):
 def main():
     fig, axs = plt.subplots(3, 4)
 
-    # for i, phoneme in enumerate(PHONEMES):
-    #     ax = axs[i // 4, i % 4]
-    #     ax.set_title(f'Phonème {phoneme}')
-    #
-    #     for pitch in PITCHES:
-    #         for author in AUTHORS:
-    #             played_file = f'./assets/{phoneme}_{author["name"]}_{pitch["num"]}.wav'
-    #             print(f'# Phonème {phoneme} par {author["name"]} : pitch {pitch["num"]}')
-    #             n = wav_to_normalized_h_2(played_file)
-    #             ax.plot(n.freq, n.data, linestyle=author["style"], color=pitch["color"])
-    #
-    # plt.show()
+    data_bank = []
+
+    for i, phoneme in enumerate(PHONEMES):
+        ax = axs[i // 4, i % 4]
+        ax.set_title(f'Phonème {phoneme}')
+
+        for pitch in PITCHES:
+            for author in AUTHORS:
+                played_file = f'./assets/{phoneme}_{author["name"]}_{pitch["num"]}.wav'
+                print(f'# Phonème {phoneme} par {author["name"]} : pitch {pitch["num"]}')
+                h = wav_to_normalized_h_2(played_file)
+                # ax.plot(h.freq, h.data, linestyle=author["style"], color=pitch["color"])
+                data_bank.append(h)
+
+    results = {}
+    for phoneme in PHONEMES:
+        results[phoneme] = 0.0
 
     for i, h in enumerate(process_samples(drop_blanks(record()))):
-        print("{} samples recorded".format(i + 1))
-        plt.plot(h.data)
-        plt.show()
+        for hh in data_bank:
+            results[hh.phoneme.value] += scalar_product(h, hh) ** 2
+
+    best_result = 0.0
+    best_phoneme = None
+    for phoneme in PHONEMES:
+        if results[phoneme] > best_result:
+            best_phoneme = phoneme
+            best_result = results[phoneme]
+
+    print("Identified: {} with score {}".format(best_phoneme, best_result))
 
 
 if __name__ == "__main__":

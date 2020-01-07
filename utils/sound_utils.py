@@ -181,7 +181,7 @@ def scalar_product(spectrum_a: Spectrum, spectrum_b: Spectrum) -> float:
     """TODO
     """
 
-    return np.dot(spectrum_a.data, spectrum_b.data)
+    return (np.dot(spectrum_a.data, spectrum_b.data) + 1) / 2
 
 
 def wav_to_normalized_h_1(played_file: str) -> Spectrum:
