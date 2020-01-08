@@ -13,7 +13,7 @@ import numpy as np
 from utils.constants import N
 from utils.data_objects import Sample, Phoneme
 from utils.sound_utils import wav_to_normalized_h_1, wav_to_normalized_h_2, h_2, \
-    scalar_product
+    scalar_product, h_1
 from utils.easy_thread import ThreadPool, DebugLevel
 
 """Default audio file to load
@@ -65,7 +65,7 @@ def record():
         yield data
 
 
-BLANK_STD_THRESHOLD = 8000
+BLANK_STD_THRESHOLD = 600
 
 
 def is_blank(sample):
@@ -76,7 +76,7 @@ def is_blank(sample):
 
 def drop_blanks(record_gen):
     for i, sample in enumerate(record_gen):
-        if i > 0 and not is_blank(sample):
+        if i > 1 and not is_blank(sample):
             yield sample
 
 
@@ -90,13 +90,13 @@ def process_samples(record_gen):
 
 
 def main():
-    fig, axs = plt.subplots(3, 4)
+    # fig, axs = plt.subplots(3, 4)
 
     data_bank = []
 
     for i, phoneme in enumerate(PHONEMES):
-        ax = axs[i // 4, i % 4]
-        ax.set_title(f'Phonème {phoneme}')
+        # ax = axs[i // 4, i % 4]
+        # ax.set_title(f'Phonème {phoneme}')
 
         for pitch in PITCHES:
             for author in AUTHORS:
@@ -106,22 +106,39 @@ def main():
                 # ax.plot(h.freq, h.data, linestyle=author["style"], color=pitch["color"])
                 data_bank.append(h)
 
-    results = {}
-    for phoneme in PHONEMES:
-        results[phoneme] = 0.0
+    # plt.show()
 
-    for i, h in enumerate(process_samples(drop_blanks(record()))):
-        for hh in data_bank:
-            results[hh.phoneme.value] += scalar_product(h, hh) ** 2
+    while True:
+        results = {}
+        count = {}
+        hs = []
+        for phoneme in PHONEMES:
+            results[phoneme] = 0.0
+            count[phoneme] = 0
 
-    best_result = 0.0
-    best_phoneme = None
-    for phoneme in PHONEMES:
-        if results[phoneme] > best_result:
-            best_phoneme = phoneme
-            best_result = results[phoneme]
+        for i, h in enumerate(process_samples(drop_blanks(record()))):
+            hs.append(h.data)
+            for hh in data_bank:
+                results[hh.phoneme.value] += scalar_product(h, hh) ** 2
+                count[hh.phoneme.value] += 1
 
-    print("Identified: {} with score {}".format(best_phoneme, best_result))
+        for phoneme in PHONEMES:
+            results[phoneme] /= count[phoneme]
+
+        best_result = 0
+        best_phoneme = None
+        for phoneme in PHONEMES:
+            if results[phoneme] > best_result:
+                best_phoneme = phoneme
+                best_result = results[phoneme]
+
+        print("Identified: {} with score {}".format(best_phoneme, best_result))
+        print(results)
+
+        hs = np.array(hs)
+        h_avg = hs.mean(0)
+        plt.plot(h_avg)
+        plt.show()
 
 
 if __name__ == "__main__":
