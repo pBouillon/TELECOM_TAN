@@ -61,12 +61,11 @@ def record():
     dt = np.dtype("i2")
 
     while not stop:
-        data = np.frombuffer(stream.read(N), dtype=dt)
+        data = np.frombuffer(stream.read(N_2), dtype=dt)
         yield data
-        audio.terminate()
 
 
-BLANK_STD_THRESHOLD = 600
+BLANK_STD_THRESHOLD = 300
 
 
 def is_blank(sample):
@@ -135,8 +134,8 @@ def load_samples():
             ))
     return data_bank
 
-def convert_wav_to_npy(need_confirmation = True):
-    def convert(wav_filename, need_confirmation = True):
+def convert_wav_to_npy(save = True, forceSave = False):
+    def convert(wav_filename, save = True, forcesave = False):
         hs = []
         def record():
             t = 0.0
@@ -164,10 +163,11 @@ def convert_wav_to_npy(need_confirmation = True):
         else:
             print("Fichier traité : {}".format(wav_filename))
         filename = wav_filename
-        filepath = path.join(NEW_SAMPLES_STORE, filename)
-        plt.plot(h_avg)
-        plt.show()
-        if input("Est-ce un bon échantillon ? (Y/N)") in 'YOyo' or not need_confirmation:
+        filepath = path.join(NEW_SAMPLES_STORE, path.basename(filename))
+        if not forcesave:
+            plt.plot(h_avg)
+            plt.show()
+        if forcesave or save and input("Est-ce un bon échantillon ? (Y/N)") in 'YOyo':
             np.save(filepath, h_avg)
             print("Phonème enregistré sous le nom {}".format(filepath))
         else:
@@ -175,7 +175,7 @@ def convert_wav_to_npy(need_confirmation = True):
 
     for r, d, f in os.walk(ASSETS_SAMPLES_STORE):
         for fp in f:
-            convert(path.join(r, path.basename(fp)), need_confirmation)
+            convert(path.join(r, path.basename(fp)), save, forceSave)
     print("Went through all wav files c:")
         
             
@@ -200,17 +200,19 @@ def main_2():
         
         best_result = 0
         best_hh_data = None
+        best_hh = None
         best_phoneme = None
         for hh in data_bank:
             score = float(scalar_product(h_avg, hh.data))
             print(h_avg.shape, hh.data.shape, type(score), score)
             print(hh.file_name)
             if score > best_result:
+                best_hh = hh
                 best_hh_data = hh.data
                 best_result = score
                 best_phoneme = hh.phoneme.value
 
-        print("Identified: {} with score {}".format(best_phoneme, best_result))
+        print("Identified: {} with score {} --> {}".format(best_phoneme, best_result, best_hh.file_name))
         plt.plot(np.arange(len(h_avg)), h_avg, '-r', np.arange(len(h_avg)), best_hh_data, '-.b')
         plt.show()
 
@@ -288,7 +290,7 @@ def main_main():
         while(True):
             record_and_store()
     elif method == '4':
-        convert_wav_to_npy()
+        convert_wav_to_npy(False, forceSave = True)
     else:
         print("Didn't recognized your input : {}".format(method))
 

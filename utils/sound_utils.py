@@ -165,8 +165,9 @@ def normalize(spectrum: Spectrum) -> Spectrum:
     """
 
     data = np.copy(spectrum.data)
-    data -= np.mean(data)
-    data /= np.std(data)
+
+    norm = np.sqrt(np.sum(np.power(data, 2)))
+    data /= norm
 
     return Spectrum(
         data=data,
@@ -180,7 +181,7 @@ def scalar_product(spectrum_a: Spectrum, spectrum_b: Spectrum) -> float:
     """TODO
     """
 
-    return (np.dot(spectrum_a.data, spectrum_b.data) / K_MAX + 1) / 2
+    return (1 / np.sum(np.abs(np.subtract(spectrum_a.data, spectrum_b.data)))) #* ((np.dot(spectrum_a.data, spectrum_b.data) / K_MAX + 1) / 2)
 
 
 def wav_to_normalized_h_1(played_file: str) -> Spectrum:
