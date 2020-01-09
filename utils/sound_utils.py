@@ -13,8 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib2 import Path
 
-from utils.constants import N, CD_QUALITY_RATE, NSV, K_MIN, K_MAX, \
-    T_E, KV, K_C, RO, QSV, Q
+from utils.constants import *
 from utils.data_objects import Sample, Phoneme, Spectrum, Cepstrum
 
 
@@ -56,7 +55,7 @@ def windowed(sample: Sample) -> Sample:
 
     :returns: the sample with the the Hamming window applied on its data
     """
-    hamming_window = (1 / 2) * (1 + np.cos(2 * pi * (NSV - N / 2) / N))
+    hamming_window = (1 / 2) * (1 + np.cos(2 * pi * (NSV - N_2 / 2) / N_2))
     return Sample(
         phoneme=sample.phoneme,
         file_name=sample.file_name,
@@ -74,7 +73,7 @@ def spectrum_of(sample: Sample) -> Spectrum:
 
     :returns: the generated Spectrum object
     """
-    data = np.abs(np.fft.fft(sample.data))[:K_MAX]
+    data = np.abs(np.fft.fft(sample.data, n=N))[:K_MAX]
 
     freq = np.fft.fftfreq(N, T_E)[:K_MAX]
 
@@ -214,7 +213,7 @@ def wav_to_normalized_h_2(played_file: str) -> Spectrum:
 
 def h_2(raw_sample):
     w = windowed(raw_sample)
-    s = np.fft.fft(w.data)
+    s = np.fft.fft(w.data, n=N)
     p = np.sqrt(1 + (KV / K_C) ** 2)
     pp = np.concatenate([p, np.ones(len(s) - 2 * K_MAX), p[::-1]])
     s = s * pp
@@ -222,16 +221,22 @@ def h_2(raw_sample):
     n = len(s)
     c, ndelay = complex_cepstrum(s)
     rc = real_cepstrum(s)
-    K_C_MIN_SEARCH = int(np.round(1 / (200 * T_E)))
-    K_C_MAX_SEARCH = int(np.round(1 / (75 * T_E)))
+    K_C_MIN_SEARCH = int(np.round(4 / (200 * T_E)))
+    K_C_MAX_SEARCH = int(np.round(4 / (75 * T_E)))
     k_f_p = np.argmax(rc[K_C_MIN_SEARCH:K_C_MAX_SEARCH]) + K_C_MIN_SEARCH
-    f_p = 1 / (k_f_p * T_E)
+    f_p = 4 / (k_f_p * T_E)
     print(f_p)
-    k_f_p -= 50
+    k_f_p -= 200
     print(k_f_p)
+    # plt.plot(rc)
+    # plt.axvline(x=K_C_MIN_SEARCH, color="b")
+    # plt.axvline(x=K_C_MAX_SEARCH, color="r")
+    # plt.axvline(x=k_f_p + 200, color="g", alpha=0.2)
+    # plt.axvline(x=k_f_p, color="y")
+    # plt.show()
     c_altered = np.concatenate(
         [c[:k_f_p], np.zeros(len(c) - 2 * k_f_p), c[-k_f_p:]])
-    print(len(c))
+    # print(len(c))
     assert (len(c) == len(c_altered))
     new_s = inverse_complex_cepstrum(c_altered, ndelay)
     return normalize(Spectrum(

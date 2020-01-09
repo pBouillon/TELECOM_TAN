@@ -21,7 +21,8 @@ NU = 13
 
 """Number of data points in each samples
 """
-N = 2 ** NU
+N_2 = 2 ** NU
+N = N_2 * 4
 
 """Sample spacing
 """
@@ -29,19 +30,19 @@ T_E = 1 / CD_QUALITY_RATE
 
 """Sample's duration
 """
-T = N * T_E
+T = N_2 * T_E
 
 """Time vector
 """
-TV = np.linspace(-T / 2, T / 2, N, endpoint=False)
+TV = np.linspace(-T / 2, T / 2, N_2, endpoint=False)
 
 """Shifted N vector
 """
-NSV = np.arange(0, N, 1)
+NSV = np.arange(0, N_2, 1)
 
 """TODO
 """
-K_MAX = 512
+K_MAX = 512*4
 
 """TODO
 """
@@ -49,11 +50,11 @@ TARGET_F_MIN = 300
 
 """TODO
 """
-K_MIN = floor(TARGET_F_MIN * T)
+K_MIN = floor(TARGET_F_MIN * T)*4
 
 """TODO
 """
-F_MAX = K_MAX / T
+F_MAX = K_MAX / (4*T)
 
 """TODO
 """
@@ -61,7 +62,7 @@ KV = np.arange(0, K_MAX, 1)
 
 """TODO
 """
-K_C = 80  # TODO: adjust
+K_C = 80*4  # TODO: adjust
 
 """TODO
 """
@@ -73,7 +74,7 @@ F_P_REF = 150
 
 """TODO
 """
-Q = floor(F_P_REF * T)
+Q = floor(F_P_REF * T)*4
 
 """TODO
 """

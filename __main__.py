@@ -54,7 +54,7 @@ def record():
     stream = audio.open(
         format=FORMAT, channels=CHANNELS,
         rate=RATE, input=True,
-        frames_per_buffer=N)
+        frames_per_buffer=N_2)
 
     ThreadPool(debug_level=DebugLevel.ERROR).add(1, ask_for_stop)
 
@@ -144,9 +144,9 @@ def convert_wav_to_npy(need_confirmation = True):
 
             dt = np.dtype("i2")
             while t < 3:
-                raw_data = wf.readframes(N)
-                print(type(raw_data), len(raw_data))
-                if len(raw_data) < 2 * N:
+                raw_data = wf.readframes(N_2)
+                # print(type(raw_data), len(raw_data))
+                if len(raw_data) < 2 * N_2:
                     break
                 data = np.frombuffer(raw_data, dtype=dt)
                 t += T
