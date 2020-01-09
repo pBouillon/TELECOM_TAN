@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import pyaudio
 import numpy as np
 
-from utils.constants import N
+from utils.constants import *
 from utils.data_objects import Sample, Phoneme, Spectrum
 from utils.sound_utils import wav_to_normalized_h_1, wav_to_normalized_h_2, h_2, \
     scalar_product, h_1
@@ -91,8 +91,10 @@ def process_samples(record_gen):
 from time import time
 import os
 from os import path
+import wave
 
 NEW_SAMPLES_STORE = "./assets/new"
+ASSETS_SAMPLES_STORE = "./assets/samples/"
 
 
 def record_and_store():
@@ -115,7 +117,6 @@ def record_and_store():
     else:
         print("Phonème non enregistré")
 
-
 def load_samples():
     data_bank = []
     for r, d, f in os.walk(NEW_SAMPLES_STORE):
@@ -132,6 +133,51 @@ def load_samples():
                 phoneme=Phoneme(phoneme)
             ))
     return data_bank
+
+def convert_wav_to_npy(need_confirmation = True):
+    def convert(wav_filename, need_confirmation = True):
+        hs = []
+        def record():
+            t = 0.0
+            wf = wave.open(wav_filename, 'rb')
+
+            dt = np.dtype("i2")
+            while t < 3:
+                raw_data = wf.readframes(N)
+                print(type(raw_data), len(raw_data))
+                if len(raw_data) < 2 * N:
+                    break
+                data = np.frombuffer(raw_data, dtype=dt)
+                t += T
+                yield data
+
+        for i, h in enumerate(process_samples(drop_blanks(record()))):
+            hs.append(h.data)
+        hs = np.array(hs)
+        h_avg = hs.mean(0)
+        wav_filename_splitted = path.basename(wav_filename).split('_')
+        phoneme = wav_filename_splitted[0]
+        if phoneme not in PHONEMES:
+            print("\"{}\" n'est pas reconnu. Réessayez.".format(phoneme))
+            phoneme = input("Phoneme : ")
+        else:
+            print("Fichier traité : {}".format(wav_filename))
+        filename = wav_filename
+        filepath = path.join(NEW_SAMPLES_STORE, filename)
+        plt.plot(h_avg)
+        plt.show()
+        if input("Est-ce un bon échantillon ? (Y/N)") in 'YOyo' or not need_confirmation:
+            np.save(filepath, h_avg)
+            print("Phonème enregistré sous le nom {}".format(filepath))
+        else:
+            print("Phonème non enregistré")
+
+    for r, d, f in os.walk(ASSETS_SAMPLES_STORE):
+        for fp in f:
+            convert(path.join(r, path.basename(fp)), need_confirmation)
+    print("Went through all wav files c:")
+        
+            
 
 
 def main_2():
@@ -224,20 +270,26 @@ def main_1():
 
 
 def main_main():
-    method = input("""Please enter your choice : 
+    method = input("""Please enter your choice :
+    To recognize a Phonem : 
     (1) Use assets base
     (2) Use live (recorded) base 
-    (3) Add sound to the live base\n""")
+    ---------------------
+    Configurations :
+    (3) Add a sound to the live base
+    (4) Convert all assets ressources to live base\n""")
 
     if method == '1':
         main_1()
+    elif method == '2':
+        main_2()
+    elif method == '3':
+        while(True):
+            record_and_store()
+    elif method == '4':
+        convert_wav_to_npy()
     else:
-        if method == '2':
-            main_2()
-        else:
-            if method == '3':
-                while(True):
-                    record_and_store()
+        print("Didn't recognized your input : {}".format(method))
 
 
 if __name__ == "__main__":
