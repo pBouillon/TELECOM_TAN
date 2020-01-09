@@ -11,7 +11,7 @@ import pyaudio
 import numpy as np
 
 from utils.constants import N
-from utils.data_objects import Sample, Phoneme
+from utils.data_objects import Sample, Phoneme, Spectrum
 from utils.sound_utils import wav_to_normalized_h_1, wav_to_normalized_h_2, h_2, \
     scalar_product, h_1
 from utils.easy_thread import ThreadPool, DebugLevel
@@ -65,7 +65,7 @@ def record():
         yield data
 
 
-BLANK_STD_THRESHOLD = 600
+BLANK_STD_THRESHOLD = 300
 
 
 def is_blank(sample):
@@ -87,6 +87,48 @@ def process_samples(record_gen):
             file_name='<audio input stream>',
             data=sample
         ))
+
+from time import time
+import os
+from os import path
+
+NEW_SAMPLES_STORE = "./assets/new"
+
+
+def record_and_store():
+    hs = []
+    for i, h in enumerate(process_samples(drop_blanks(record()))):
+        hs.append(h.data)
+    hs = np.array(hs)
+    h_avg = hs.mean(0)
+    phoneme = input("Phoneme : ")
+    if phoneme not in PHONEMES:
+        print("\"{}\" n'est pas reconnu. Réessayez.".format(phoneme))
+        phoneme = input("Phoneme : ")
+    filename = "{}_{}".format(phoneme, int(time()))
+    filepath = path.join(NEW_SAMPLES_STORE, filename)
+    np.save(filepath, h_avg)
+
+
+def load_samples():
+    data_bank = []
+    for r, d, f in os.walk(NEW_SAMPLES_STORE):
+        for filepath in f:
+            filename = path.basename(filepath)
+            if filename.startswith("."):
+                continue
+            phoneme = filename.split("_")[0]
+            assert(phoneme in PHONEMES)
+            data_bank.append(Spectrum(
+                data=np.load(filepath),
+                freq=None,
+                file_name=filepath,
+                phoneme=Phoneme(phoneme)
+            ))
+
+
+def main_2():
+    pass
 
 
 def main():
