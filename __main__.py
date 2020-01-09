@@ -65,7 +65,7 @@ def record():
         yield data
 
 
-BLANK_STD_THRESHOLD = 300
+BLANK_STD_THRESHOLD = 600
 
 
 def is_blank(sample):
@@ -107,7 +107,13 @@ def record_and_store():
         phoneme = input("Phoneme : ")
     filename = "{}_{}".format(phoneme, int(time()))
     filepath = path.join(NEW_SAMPLES_STORE, filename)
-    np.save(filepath, h_avg)
+    plt.plot(h_avg)
+    plt.show()
+    if input("Est-ce un bon échantillon ? (Y/N)") in 'YOyo':
+        np.save(filepath, h_avg)
+        print("Phonème enregistré sous le nom {}".format(filepath))
+    else:
+        print("Phonème non enregistré")
 
 
 def load_samples():
@@ -120,18 +126,51 @@ def load_samples():
             phoneme = filename.split("_")[0]
             assert(phoneme in PHONEMES)
             data_bank.append(Spectrum(
-                data=np.load(filepath),
+                data=np.load(path.join(NEW_SAMPLES_STORE,filepath)),
                 freq=None,
                 file_name=filepath,
                 phoneme=Phoneme(phoneme)
             ))
+    return data_bank
 
 
 def main_2():
-    pass
+    data_bank = load_samples()
+
+    while True:
+        results = {}
+        count = {}
+        hs = []
+        for phoneme in PHONEMES:
+            results[phoneme] = 0.0
+            count[phoneme] = 0
+
+        for i, h in enumerate(process_samples(drop_blanks(record()))):
+            hs.append(h.data)
+
+        hs = np.array(hs)
+        h_avg = hs.mean(0)
+        
+        best_result = 0
+        best_hh_data = None
+        best_phoneme = None
+        for hh in data_bank:
+            score = float(scalar_product(h_avg, hh.data))
+            print(h_avg.shape, hh.data.shape, type(score), score)
+            print(hh.file_name)
+            if score > best_result:
+                best_hh_data = hh.data
+                best_result = score
+                best_phoneme = hh.phoneme.value
+
+        print("Identified: {} with score {}".format(best_phoneme, best_result))
+        plt.plot(np.arange(len(h_avg)), h_avg, '-r', np.arange(len(h_avg)), best_hh_data, '-.b')
+        plt.show()
 
 
-def main():
+
+
+def main_1():
     # fig, axs = plt.subplots(3, 4)
 
     data_bank = []
@@ -165,7 +204,8 @@ def main():
                 count[hh.phoneme.value] += 1
 
         for phoneme in PHONEMES:
-            results[phoneme] /= count[phoneme]
+            if count[phoneme] != 0:
+                results[phoneme] /= count[phoneme]
 
         best_result = 0
         best_phoneme = None
@@ -183,5 +223,22 @@ def main():
         plt.show()
 
 
+def main_main():
+    method = input("""Please enter your choice : 
+    (1) Use assets base
+    (2) Use live (recorded) base 
+    (3) Add sound to the live base\n""")
+
+    if method == '1':
+        main_1()
+    else:
+        if method == '2':
+            main_2()
+        else:
+            if method == '3':
+                while(True):
+                    record_and_store()
+
+
 if __name__ == "__main__":
-    main()
+    main_main()
