@@ -63,6 +63,7 @@ def record():
     while not stop:
         data = np.frombuffer(stream.read(N), dtype=dt)
         yield data
+        audio.terminate()
 
 
 BLANK_STD_THRESHOLD = 600
